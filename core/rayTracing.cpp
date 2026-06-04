@@ -3,7 +3,7 @@
 #include "geometry.h"
 
 void RayTracer(const CenaProcessada& dados, const Camera& cam, const SceneData& scene){
-    cout<<"P3\n"<<cam.hres<<' '<<cam.vres<<"\n255\n";
+    std::vector<std::array<int, 3>> image_buffer(cam.hres * cam.vres);
     for(int j = 0; j < cam.vres; j ++){
         cerr<<"Linha "<<j<<'/'<<cam.vres<<'\r'<<flush;
         for(int i = 0; i < cam.hres; i++){
@@ -20,20 +20,23 @@ void RayTracer(const CenaProcessada& dados, const Camera& cam, const SceneData& 
                 }
             }
 
-            if(!hit_obj){
-                cout << "0 0 0\n";
-                continue;
+            int r = 0, g = 0, b = 0;
+            if(hit_obj){
+                Ponto P = cam.C + (ray_dir * closest_t);
+                auto [cor_r, cor_g, cor_b] = calcular_cor_phong(
+                    P, hit_normal, ray_dir, *hit_obj, scene.globalLight.color, scene.camera.lookfrom, scene.lightList, dados.valid_objects, intersect_object);
+
+                r = (int)(255.999 * cor_r);
+                g = (int)(255.999 * cor_g);
+                b = (int)(255.999 * cor_b);
             }
 
-            Ponto P = cam.C + (ray_dir * closest_t);
-            auto [cor_r, cor_g, cor_b] = calcular_cor_phong(
-                P, hit_normal, ray_dir, *hit_obj, scene, intersect_object);
-
-            
-            int r = (int)(255.999 * cor_r);
-            int g = (int)(255.999 * cor_g);
-            int b = (int)(255.999 * cor_b);
-            cout << r << ' ' << g << ' ' << b << '\n';
+            int pixel_index = j * cam.hres + i;
+            image_buffer[pixel_index] = {r, g, b};
         }
+    }
+
+    for (const auto& pixel : image_buffer) {
+        cout << pixel[0] << ' ' << pixel[1] << ' ' << pixel[2] << '\n';
     }
 }
