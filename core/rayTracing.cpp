@@ -30,7 +30,7 @@ namespace {
 
     std::array<double, 3> RayTracer(const Vetor& direcao, const Ponto& origem , int iteracao){
         std::array<double, 3> arr = {0, 0, 0};
-        if(iteracao >= 10){
+        if(iteracao >= limite_recursao){
             return arr;
         }
         double closest_t = infinity();
@@ -46,6 +46,8 @@ namespace {
         }
         if(hit_obj){
             Ponto P = origem + (direcao * closest_t);
+            bool entrando = direcao.dot(hit_normal) < 0.0;
+            if(!entrando) hit_normal = hit_normal * (-1.0);
             auto [cor_r, cor_g, cor_b] = calcular_cor_phong(
                 P, hit_normal, direcao, *hit_obj, cor_global, CameraPos, LightList, objetos_validos, intersect_object);
             arr[0] = cor_r;
@@ -61,19 +63,16 @@ namespace {
                 arr[2] += Material.kr.b * cor_refletido[2];
             }
             if(Material.kt.r > 0 || Material.kt.g > 0 || Material.kt.b > 0){
-                bool entrando = direcao.dot(hit_normal) < 0.0;
                 double n_i, n_t;
-                Vetor N_refr = hit_normal;
                 if(entrando){
                     n_i = 1.0; n_t = Material.ni;
                 }
                 else{
                     n_i = Material.ni; n_t = 1.0;
-                    N_refr = hit_normal * (-1.0);
                 }
-                if(notTIR(n_i, n_t, N_refr, -direcao)){
-                    Ponto P_refratado = P - (N_refr * 1e-4);
-                    Vetor refratado = refractDirection(n_i, n_t, N_refr, -direcao);
+                if(notTIR(n_i, n_t, hit_normal , -direcao)){
+                    Ponto P_refratado = P - (hit_normal  * 1e-4);
+                    Vetor refratado = refractDirection(n_i, n_t, hit_normal , -direcao);
                     std::array<double, 3> cor_refratado = RayTracer(refratado, P_refratado, iteracao + 1);
                     arr[0] += Material.kt.r * cor_refratado[0];  // soma em float
                     arr[1] += Material.kt.g * cor_refratado[1];
@@ -99,7 +98,7 @@ void Trace(const CenaProcessada& dados, const Camera& cam, const SceneData& scen
         for(int i = 0; i < cam.hres; i++){
             int pixel_index = j * cam.hres + i;
             Vetor ray_dir = cam.getRayDirection(i, j);
-            auto pixel_desenhado = RayTracer(ray_dir, CameraPos, 1);
+            auto pixel_desenhado = RayTracer(ray_dir, CameraPos, 0);
             image_buffer[pixel_index] = {
                 (int)(255.999 * pixel_desenhado[0]),
                 (int)(255.999 * pixel_desenhado[1]),
