@@ -8,6 +8,10 @@ namespace {
     std::vector<ObjectData> objetos_validos;
     Ponto CameraPos;
 
+    double tonemap(double x){
+        return x / (x + 1.0);
+    }
+
     bool notTIR(double n_i, double n_t, const Vetor& N, const Vetor& d_neg) {
         double cos_i = N.dot(d_neg);           // cos(θi)
         double ratio = n_i / n_t;
@@ -79,9 +83,6 @@ namespace {
                     arr[2] += Material.kt.b * cor_refratado[2];
                 }
             }
-            arr[0] = std::min(1.0, arr[0]);
-            arr[1] = std::min(1.0, arr[1]);
-            arr[2] = std::min(1.0, arr[2]);
         }
         return arr;
     }
@@ -107,9 +108,9 @@ void Trace(const CenaProcessada& dados, const Camera& cam, const SceneData& scen
                     cor_acumulada[2] += c[2];
                 }
             }
-            cor_acumulada[0] /= 4.0;
-            cor_acumulada[1] /= 4.0;
-            cor_acumulada[2] /= 4.0;
+            cor_acumulada[0] /= 4.0; cor_acumulada[0] = tonemap(cor_acumulada[0]);
+            cor_acumulada[1] /= 4.0; cor_acumulada[1] = tonemap(cor_acumulada[1]);
+            cor_acumulada[2] /= 4.0; cor_acumulada[2] = tonemap(cor_acumulada[2]);
             image_buffer[pixel_index] = {
                 (int)(255.999 * cor_acumulada[0]),
                 (int)(255.999 * cor_acumulada[1]),
