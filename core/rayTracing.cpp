@@ -97,12 +97,23 @@ void Trace(const CenaProcessada& dados, const Camera& cam, const SceneData& scen
         cerr<<"Linha "<<j<<'/'<<cam.vres<<'\r'<<flush;
         for(int i = 0; i < cam.hres; i++){
             int pixel_index = j * cam.hres + i;
-            Vetor ray_dir = cam.getRayDirection(i, j);
-            auto pixel_desenhado = RayTracer(ray_dir, CameraPos, 0);
+            std::array<double, 3> cor_acumulada = {0.0, 0.0, 0.0};
+            for(int sy = 0; sy < 2; sy++){
+                for(int sx = 0; sx < 2; sx++){
+                    Vetor ray = cam.getRayDirection((double)i + 0.5*sx, (double)j + 0.5*sy);
+                    auto c = RayTracer(ray, CameraPos, 1);
+                    cor_acumulada[0] += c[0];
+                    cor_acumulada[1] += c[1];
+                    cor_acumulada[2] += c[2];
+                }
+            }
+            cor_acumulada[0] /= 4.0;
+            cor_acumulada[1] /= 4.0;
+            cor_acumulada[2] /= 4.0;
             image_buffer[pixel_index] = {
-                (int)(255.999 * pixel_desenhado[0]),
-                (int)(255.999 * pixel_desenhado[1]),
-                (int)(255.999 * pixel_desenhado[2])
+                (int)(255.999 * cor_acumulada[0]),
+                (int)(255.999 * cor_acumulada[1]),
+                (int)(255.999 * cor_acumulada[2])
             };
         }
     }
