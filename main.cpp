@@ -21,6 +21,6 @@ int main(int argc, char** argv){
 
     CenaProcessada dados = prepararObjetos(scene.objects, transformar);
     cout<<"P3\n"<<cam.hres<<' '<<cam.vres<<"\n255\n";
-    RayTracer(dados, cam, scene);
+    Trace(dados, cam, scene);
     return 0;
 }

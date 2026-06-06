@@ -34,7 +34,7 @@ std::array<double, 3> calcular_cor_phong(
 ) {
     auto Ia = cor_global;
     auto mat = hit_obj.material;
-    Vetor N = N_in;
+    Vetor N = N_in.normalize();
     N = N.normalize();
 
     Vetor V = (LookFrom_atual - P).normalize();
