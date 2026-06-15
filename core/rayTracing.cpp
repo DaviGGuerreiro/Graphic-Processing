@@ -15,7 +15,7 @@ namespace {
     bool notTIR(double n_i, double n_t, const Vetor& N, const Vetor& d_neg) {
         double cos_i = N.dot(d_neg);           // cos(θi)
         double ratio = n_i / n_t;
-        double discriminant = 1.0 - (ratio * ratio) * (1.0 - cos_i * cos_i);
+        double discriminant = 1.0 - ((ratio * ratio) * (1.0 - (cos_i * cos_i)));
         return discriminant >= 0.0;            // false = TIR ocorre
     }
 
@@ -23,13 +23,13 @@ namespace {
         // d_neg = -d (direção invertida do raio incidente)
         double ratio   = n_i / n_t;
         double cos_i   = N.dot(d_neg);                          // cos(θi)
-        double disc    = 1.0 - ratio * ratio * (1.0 - cos_i * cos_i);
+        double disc    = 1.0 - ( ratio * ratio * (1.0 - (cos_i * cos_i)));
         double cos_t   = std::sqrt(disc);                       // cos(θt)
 
         // T = (n_i/n_t)*d + (n_i/n_t * cos_i - cos_t)*N
         // lembrando que d = -d_neg
         Vetor d = d_neg * (-1.0);
-        return d * ratio + N * (ratio * cos_i - cos_t);
+        return ((d * ratio) + (N * ((ratio * cos_i) - cos_t))).normalize();
     }
 
     std::array<double, 3> RayTracer(const Vetor& direcao, const Ponto& origem , int iteracao){
@@ -58,13 +58,16 @@ namespace {
             arr[1] = cor_g;
             arr[2] = cor_b;
             MaterialData Material = hit_obj->material;
+            bool refletiu = false;
+            std::array<double, 3> cor_refletido = {0.0,0.0,0.0};
             if(Material.kr.r > 0.0 || Material.kr.g > 0.0 || Material.kr.b > 0.0){
-                Ponto P_refletido = P + (hit_normal * 1e-4);
-                Vetor refletido = direcao - hit_normal * (2.0 * direcao.dot(hit_normal));
-                std::array<double, 3> cor_refletido = RayTracer(refletido, P_refletido, iteracao + 1);
+                Ponto P_refletido = P + (hit_normal * 0.001);
+                Vetor refletido = (direcao - (hit_normal * (2.0 * direcao.dot(hit_normal)))).normalize();
+                cor_refletido = RayTracer(refletido, P_refletido, iteracao + 1);
                 arr[0] += Material.kr.r * cor_refletido[0];
                 arr[1] += Material.kr.g * cor_refletido[1];
                 arr[2] += Material.kr.b * cor_refletido[2];
+                refletiu = true;
             }
             if(Material.kt.r > 0 || Material.kt.g > 0 || Material.kt.b > 0){
                 double n_i, n_t;
@@ -75,14 +78,27 @@ namespace {
                     n_i = Material.ni; n_t = 1.0;
                 }
                 if(notTIR(n_i, n_t, hit_normal , -direcao)){
-                    Ponto P_refratado = P - (hit_normal  * 1e-4);
+                    Ponto P_refratado = P - (hit_normal  * 0.001);
                     Vetor refratado = refractDirection(n_i, n_t, hit_normal , -direcao);
                     std::array<double, 3> cor_refratado = RayTracer(refratado, P_refratado, iteracao + 1);
                     arr[0] += Material.kt.r * cor_refratado[0];  // soma em float
                     arr[1] += Material.kt.g * cor_refratado[1];
                     arr[2] += Material.kt.b * cor_refratado[2];
                 }
+                else{
+                    if(!refletiu){
+                        Ponto P_refletido = P + (hit_normal * 0.001);
+                        Vetor refletido = (direcao - (hit_normal * (2.0 * direcao.dot(hit_normal)))).normalize();
+                        cor_refletido = RayTracer(refletido, P_refletido, iteracao + 1);
+                    }
+                    arr[0] += Material.kt.r * cor_refletido[0];
+                    arr[1] += Material.kt.g * cor_refletido[1];
+                    arr[2] += Material.kt.b * cor_refletido[2];
+                }
             }
+            arr[0] = std::min(1.0, std::max(0.0, arr[0]));
+            arr[1] = std::min(1.0, std::max(0.0, arr[1]));
+            arr[2] = std::min(1.0, std::max(0.0, arr[2]));
         }
         return arr;
     }
@@ -99,18 +115,28 @@ void Trace(const CenaProcessada& dados, const Camera& cam, const SceneData& scen
         for(int i = 0; i < cam.hres; i++){
             int pixel_index = j * cam.hres + i;
             std::array<double, 3> cor_acumulada = {0.0, 0.0, 0.0};
-            for(int sy = 0; sy < 2; sy++){
-                for(int sx = 0; sx < 2; sx++){
-                    Vetor ray = cam.getRayDirection((double)i + 0.5*sx, (double)j + 0.5*sy);
+            //for(int sy = 0; sy < 2; sy++){
+              //  for(int sx = 0; sx < 2; sx++){
+                    //Vetor ray = cam.getRayDirection((double)i + 0.5*sx, (double)j + 0.5*sy);
+                    Vetor ray = cam.getRayDirection(i,j);
                     auto c = RayTracer(ray, CameraPos, 1);
                     cor_acumulada[0] += c[0];
                     cor_acumulada[1] += c[1];
                     cor_acumulada[2] += c[2];
-                }
-            }
-            cor_acumulada[0] /= 4.0; cor_acumulada[0] = tonemap(cor_acumulada[0]);
-            cor_acumulada[1] /= 4.0; cor_acumulada[1] = tonemap(cor_acumulada[1]);
-            cor_acumulada[2] /= 4.0; cor_acumulada[2] = tonemap(cor_acumulada[2]);
+                //}
+            //}
+            //cor_acumulada[0] /= 4.0; 
+            //cor_acumulada[0] = tonemap(cor_acumulada[0]); 
+            //cor_acumulada[0] = std::min(1.0, std::max(0.0, cor_acumulada[0]));
+
+            //cor_acumulada[1] /= 4.0; 
+            //cor_acumulada[1] = tonemap(cor_acumulada[1]); 
+            //cor_acumulada[1] = std::min(1.0, std::max(0.0, cor_acumulada[1]));
+
+            //cor_acumulada[2] /= 4.0; 
+            //cor_acumulada[2] = tonemap(cor_acumulada[2]); 
+            //cor_acumulada[2] = std::min(1.0, std::max(0.0, cor_acumulada[2]));
+
             image_buffer[pixel_index] = {
                 (int)(255.999 * cor_acumulada[0]),
                 (int)(255.999 * cor_acumulada[1]),

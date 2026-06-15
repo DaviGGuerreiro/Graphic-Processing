@@ -2,7 +2,7 @@
 #include <cmath>
 #include <algorithm>
 
-const double EPSILON = 1e-4;
+const double EPSILON = 0.001;
 namespace {
     bool checar_sombra(
         const Ponto& ponto_deslocado,
