@@ -58,17 +58,7 @@ namespace {
             arr[1] = cor_g;
             arr[2] = cor_b;
             MaterialData Material = hit_obj->material;
-            bool refletiu = false;
-            std::array<double, 3> cor_refletido = {0.0,0.0,0.0};
-            if(Material.kr.r > 0.0 || Material.kr.g > 0.0 || Material.kr.b > 0.0){
-                Ponto P_refletido = P + (hit_normal * 0.001);
-                Vetor refletido = (direcao - (hit_normal * (2.0 * direcao.dot(hit_normal)))).normalize();
-                cor_refletido = RayTracer(refletido, P_refletido, iteracao + 1);
-                arr[0] += Material.kr.r * cor_refletido[0];
-                arr[1] += Material.kr.g * cor_refletido[1];
-                arr[2] += Material.kr.b * cor_refletido[2];
-                refletiu = true;
-            }
+            bool ocorreu_tir = false;
             if(Material.kt.r > 0 || Material.kt.g > 0 || Material.kt.b > 0){
                 double n_i, n_t;
                 if(entrando){
@@ -86,16 +76,19 @@ namespace {
                     arr[2] += Material.kt.b * cor_refratado[2];
                 }
                 else{
-                    if(!refletiu){
-                        Ponto P_refletido = P + (hit_normal * 0.001);
-                        Vetor refletido = (direcao - (hit_normal * (2.0 * direcao.dot(hit_normal)))).normalize();
-                        cor_refletido = RayTracer(refletido, P_refletido, iteracao + 1);
-                    }
-                    arr[0] += Material.kt.r * cor_refletido[0];
-                    arr[1] += Material.kt.g * cor_refletido[1];
-                    arr[2] += Material.kt.b * cor_refletido[2];
+                    ocorreu_tir = true;
                 }
             }
+                
+            if(Material.kr.r > 0.0 || Material.kr.g > 0.0 || Material.kr.b > 0.0 || ocorreu_tir){
+                Ponto P_refletido = P + (hit_normal * 0.001);
+                Vetor refletido = (direcao - (hit_normal * (2.0 * direcao.dot(hit_normal)))).normalize();
+                std::array<double, 3> cor_refletido = RayTracer(refletido, P_refletido, iteracao + 1);
+                arr[0] += (ocorreu_tir ? 1.0 : Material.kr.r) * cor_refletido[0];
+                arr[1] += (ocorreu_tir ? 1.0 : Material.kr.g) * cor_refletido[1];
+                arr[2] += (ocorreu_tir ? 1.0 : Material.kr.b) * cor_refletido[2];
+            }
+
             arr[0] = std::min(1.0, std::max(0.0, arr[0]));
             arr[1] = std::min(1.0, std::max(0.0, arr[1]));
             arr[2] = std::min(1.0, std::max(0.0, arr[2]));

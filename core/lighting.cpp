@@ -49,9 +49,10 @@ std::array<double, 3> calcular_cor_phong(
         Vetor L = vetor_luz.normalize();
 
         double L_dot_N = N.dot(L);
-        if (L_dot_N <= 0.0) {
-            continue;
-        }
+
+         if (L_dot_N <= 0.0) {
+             continue;
+         }
 
         Ponto P_sombra = P + (N * EPSILON);
         if (checar_sombra(P_sombra, L, distancia_luz, valid_objects, intersect_func)) {
@@ -73,9 +74,9 @@ std::array<double, 3> calcular_cor_phong(
         }
     }
 
-    cor_r = std::min(1.0, std::max(0.0, cor_r));
-    cor_g = std::min(1.0, std::max(0.0, cor_g));
-    cor_b = std::min(1.0, std::max(0.0, cor_b));
+     cor_r = std::min(1.0, std::max(0.0, cor_r));
+     cor_g = std::min(1.0, std::max(0.0, cor_g));
+     cor_b = std::min(1.0, std::max(0.0, cor_b));
 
     return {cor_r, cor_g, cor_b};
 }
